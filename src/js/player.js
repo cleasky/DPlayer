@@ -1,5 +1,4 @@
 import Promise from 'promise-polyfill';
-import * as b24js from 'b24.js';
 
 import utils from './utils';
 import handleOption from './options';
@@ -378,20 +377,6 @@ class DPlayer {
                                 hls.destroy();
                                 delete this.plugins.hls;
                             });
-
-                            // https://github.com/xqq/b24.js
-                            if (this.options.subtitle) {
-                                const b24Renderer = new b24js.WebVTTRenderer();
-                                b24Renderer.init().then(function () {
-                                    b24Renderer.attachMedia(video);
-                                    b24Renderer.show();
-                                });
-                                hls.on(window.Hls.Events.FRAG_PARSING_PRIVATE_DATA, function (event, data) {
-                                    for (const sample of data.samples) {
-                                        b24Renderer.pushData(sample.pid, sample.data, sample.pts);
-                                    }
-                                });
-                            }
                         } else if (video.canPlayType('application/x-mpegURL') || video.canPlayType('application/vnd.apple.mpegURL')) {
                             // Normal playback
                             break;

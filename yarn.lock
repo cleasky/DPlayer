@@ -1820,11 +1820,6 @@ axios@0.21.0:
   dependencies:
     follow-redirects "^1.10.0"
 
-b24.js@1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/b24.js/-/b24.js-1.0.3.tgz#6d94cacc51d3830417d7ddf56c55eb77063783a9"
-  integrity sha512-j2hHu0asf6HxacVmGJKFSsrfoG8nC0JEjujIpsmRVkr74nC6o5gs6YF6AQD3e7YyJ8PaKuA7k2uSL9A2mAG9Og==
-
 babel-extract-comments@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/babel-extract-comments/-/babel-extract-comments-1.0.0.tgz#0a2aedf81417ed391b85e18b4614e693a0351a21"

@@ -45,7 +45,6 @@
         "art-template": "4.13.2",
         "art-template-loader": "1.4.3",
         "autoprefixer": "^9.6.1",
-        "b24.js": "1.0.3",
         "babel-loader": "^8.0.6",
         "cross-env": "^7.0.0",
         "css-loader": "^5.0.0",
