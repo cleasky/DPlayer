@@ -1,4 +1,5 @@
 import utils from './utils';
+import twemoji from 'twemoji';
 
 class Danmaku {
     constructor(options) {
@@ -220,10 +221,11 @@ class Danmaku {
                 const item = document.createElement('div');
                 item.classList.add('dplayer-danmaku-item');
                 item.classList.add(`dplayer-danmaku-${dan[i].type}`);
+                const parsed = twemoji.parse(dan[i].text);
                 if (dan[i].border) {
-                    item.innerHTML = `<span style="border:${dan[i].border}">${dan[i].text}</span>`;
+                    item.innerHTML = `<span style="border:${dan[i].border}">${parsed}</span>`;
                 } else {
-                    item.innerHTML = dan[i].text;
+                    item.innerHTML = parsed;
                 }
                 item.style.opacity = this._opacity;
                 item.style.color = utils.number2Color(dan[i].color);
@@ -322,13 +324,7 @@ class Danmaku {
     }
 
     htmlEncode(str) {
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#x27;')
-            .replace(/\//g, '&#x2f;');
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/\//g, '&#x2f;');
     }
 
     resize() {
