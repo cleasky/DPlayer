@@ -10,31 +10,21 @@ class Controller {
         this.mobileSkipTimer = 0;
         this.mobileBackwardTime = 0;
         this.mobileForwardTime = 0;
+        this.setAutoHideHandler = () => this.setAutoHide();
         if (!utils.isMobile) {
-            this.player.container.addEventListener('mousemove', () => {
-                this.setAutoHide();
-            });
-            this.player.container.addEventListener('click', () => {
-                this.setAutoHide();
-            });
+            this.player.container.addEventListener('mousemove', this.setAutoHideHandler);
+            this.player.container.addEventListener('click', this.setAutoHideHandler);
         } else {
-            this.player.container.addEventListener('touchmove', () => {
-                this.setAutoHide();
-            });
+            this.player.container.addEventListener('touchmove', this.setAutoHideHandler);
         }
-        this.player.on('play', () => {
-            this.setAutoHide();
-        });
-        this.player.on('pause', () => {
-            this.setAutoHide();
-        });
+        this.player.on('play', this.setAutoHideHandler);
+        this.player.on('pause', this.setAutoHideHandler);
 
         this.initPlayButton();
         this.initThumbnails();
         this.initPlayedBar();
         this.initFullButton();
         this.initPipButton();
-        this.initQualityButton();
         this.initSyncButton();
         this.initScreenshotButton();
         this.initSubtitleButton();
@@ -81,8 +71,8 @@ class Controller {
             this.mobileBackwardTime += 10;
             this.player.seek(this.player.video.currentTime - 10);
             this.player.notice(`${this.player.tran('REW')} ${this.mobileBackwardTime.toFixed(0)} ${this.player.tran('s')}`);
-            // カウントリセットを延長
-            // 1秒間ボタンが押されなかったら自動でリセットされる
+            // extend count reset
+            // if the REW button is not pressed within 1 second, the count will be reset automatically
             clearTimeout(this.mobileSkipTimer);
             this.mobileSkipTimer = setTimeout(() => {
                 this.mobileBackwardTime = 0;
@@ -95,8 +85,8 @@ class Controller {
             this.mobileForwardTime += 10;
             this.player.seek(this.player.video.currentTime + 10);
             this.player.notice(`${this.player.tran('FF')} ${this.mobileForwardTime.toFixed(0)} ${this.player.tran('s')}`);
-            // カウントリセットを延長
-            // 1秒間ボタンが押されなかったら自動でリセットされる
+            // extend count reset
+            // if the FF button is not pressed within 1 second, the count will be reset automatically
             clearTimeout(this.mobileSkipTimer);
             this.mobileSkipTimer = setTimeout(() => {
                 this.mobileForwardTime = 0;
@@ -109,7 +99,7 @@ class Controller {
         this.player.on('durationchange', () => {
             if (this.player.video.duration !== 1 && this.player.video.duration !== Infinity) {
                 if (this.player.options.highlight) {
-                    const highlights = document.querySelectorAll('.dplayer-highlight');
+                    const highlights = this.player.template.playedBarWrap.querySelectorAll('.dplayer-highlight');
                     [].slice.call(highlights, 0).forEach((item) => {
                         this.player.template.playedBarWrap.removeChild(item);
                     });
@@ -147,7 +137,7 @@ class Controller {
         let paused;
 
         const thumbMove = (e) => {
-            let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.playedBarWrap)) / this.player.template.playedBarWrap.clientWidth;
+            let percentage = ((e.clientX || (e.changedTouches && e.changedTouches[0].clientX)) - utils.getBoundingClientRectViewLeft(this.player.template.playedBarWrap)) / this.player.template.playedBarWrap.clientWidth;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.bar.set('played', percentage, 'width');
@@ -162,7 +152,7 @@ class Controller {
         const thumbUp = (e) => {
             document.removeEventListener(utils.nameMap.dragEnd, thumbUp);
             document.removeEventListener(utils.nameMap.dragMove, thumbMove);
-            let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.playedBarWrap)) / this.player.template.playedBarWrap.clientWidth;
+            let percentage = ((e.clientX || (e.changedTouches && e.changedTouches[0].clientX)) - utils.getBoundingClientRectViewLeft(this.player.template.playedBarWrap)) / this.player.template.playedBarWrap.clientWidth;
             percentage = Math.max(percentage, 0);
             percentage = Math.min(percentage, 1);
             this.player.bar.set('played', percentage, 'width');
@@ -238,7 +228,9 @@ class Controller {
         if (document.pictureInPictureEnabled) {
             this.player.template.pipButton.addEventListener('click', () => {
                 if (!document.pictureInPictureElement) {
-                    this.player.video.requestPictureInPicture();
+                    this.player.video.requestPictureInPicture().catch(() => {
+                        this.player.notice('Error: Picture-in-Picture is not supported.');
+                    });
                 } else {
                     document.exitPictureInPicture();
                 }
@@ -285,16 +277,6 @@ class Controller {
         });
     }
 
-    initQualityButton() {
-        if (this.player.options.video.quality) {
-            this.player.template.qualityList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('dplayer-quality-item')) {
-                    this.player.switchQuality(e.target.dataset.index);
-                }
-            });
-        }
-    }
-
     initSyncButton() {
         if (this.player.options.live) {
             this.player.template.syncButton.addEventListener('click', () => {
@@ -305,17 +287,16 @@ class Controller {
 
     initScreenshotButton() {
         if (this.player.options.screenshot) {
-            this.player.template.camareButton.addEventListener('click', () => {
+            this.player.template.cameraButton.addEventListener('click', () => {
                 const canvas = document.createElement('canvas');
                 canvas.width = this.player.video.videoWidth;
                 canvas.height = this.player.video.videoHeight;
                 canvas.getContext('2d').drawImage(this.player.video, 0, 0, canvas.width, canvas.height);
 
-                let dataURL;
                 canvas.toBlob((blob) => {
-                    dataURL = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = dataURL;
+                    if (blob === null) return;
+
+                    // generate download filename
                     const today = new Date();
                     const year = today.getFullYear();
                     const month = ('0' + (today.getMonth() + 1)).slice(-2);
@@ -323,15 +304,24 @@ class Controller {
                     const hour = ('0' + today.getHours()).slice(-2);
                     const min = ('0' + today.getMinutes()).slice(-2);
                     const sec = ('0' + today.getSeconds()).slice(-2);
-                    link.download = 'Capture_' + year + month + day + '-' + hour + min + sec + '.png';
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(dataURL);
-                });
+                    const filename = `Capture_${year}${month}${day}-${hour}${min}${sec}.jpg`;
 
-                this.player.events.trigger('screenshot', dataURL);
+                    // download screenshot
+                    const bloburl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    if (typeof link.download === 'undefined') {
+                        this.player.notice('Error: Screenshot download is not supported.');
+                        return;
+                    }
+                    link.download = filename;
+                    link.href = bloburl;
+                    link.click();
+                    URL.revokeObjectURL(bloburl);
+
+                    this.player.events.trigger('screenshot', blob);
+
+                // specify image type and quality
+                }, 'image/jpeg', 1);
             });
         }
     }
@@ -417,6 +407,12 @@ class Controller {
     }
 
     destroy() {
+        if (!utils.isMobile) {
+            this.player.container.removeEventListener('mousemove', this.setAutoHideHandler);
+            this.player.container.removeEventListener('click', this.setAutoHideHandler);
+        } else {
+            this.player.container.removeEventListener('touchmove', this.setAutoHideHandler);
+        }
         clearTimeout(this.autoHideTimer);
     }
 }

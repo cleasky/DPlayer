@@ -11,16 +11,69 @@ class Setting {
             this.show();
         });
 
-        this.player.video.addEventListener('loadedmetadata', () => {
-            if (this.player.container.offsetWidth <= 500) {
-                this.player.template.settingBox.style.maxHeight = this.player.container.offsetHeight - 55 + 'px';
+        // clip setting box
+        const settingOriginPanelHeight = this.player.template.settingOriginPanel.scrollHeight;
+        this.player.template.settingBox.style.clipPath = `inset(calc(100% - ${settingOriginPanelHeight}px) 0 0 round 7px)`;
+
+        // quality
+        if (this.player.options.video.quality) {
+            this.player.template.quality.addEventListener('click', () => {
+                this.player.template.settingBox.classList.add('dplayer-setting-box-quality');
+            });
+            this.player.template.qualityHeader.addEventListener('click', () => {
+                this.player.template.settingBox.classList.remove('dplayer-setting-box-quality');
+            });
+            for (let i = 0; i < this.player.template.qualityItem.length; i++) {
+                this.player.template.qualityItem[i].addEventListener('click', (event) => {
+                    // currently switching
+                    if (this.player.switchingQuality) {
+                        return;
+                    }
+                    this.player.switchQuality(parseInt(event.target.dataset.index));
+                });
             }
+        }
+
+        // speed
+        this.player.template.speed.addEventListener('click', () => {
+            this.player.template.settingBox.classList.add('dplayer-setting-box-speed');
         });
-        window.addEventListener('resize', () => {
-            if (this.player.container.offsetWidth <= 500) {
-                this.player.template.settingBox.style.maxHeight = this.player.container.offsetHeight - 55 + 'px';
-            }
+        this.player.template.speedHeader.addEventListener('click', () => {
+            this.player.template.settingBox.classList.remove('dplayer-setting-box-speed');
         });
+        for (let i = 0; i < this.player.template.speedItem.length; i++) {
+            this.player.template.speedItem[i].addEventListener('click', (event) => {
+                this.player.speed(parseFloat(event.target.dataset.speed));
+            });
+        }
+
+        // audio
+        this.player.template.audio.addEventListener('click', () => {
+            this.player.template.settingBox.classList.add('dplayer-setting-box-audio');
+        });
+        this.player.template.audioHeader.addEventListener('click', () => {
+            this.player.template.settingBox.classList.remove('dplayer-setting-box-audio');
+        });
+        for (let i = 0; i < this.player.template.audioItem.length; i++) {
+            this.player.template.audioItem[i].addEventListener('click', (event) => {
+                if (this.player.plugins.mpegts) {
+                    if (event.target.dataset.audio === 'primary') {
+                        // switch primary audio
+                        this.player.template.audioItem[0].classList.add('dplayer-setting-audio-current');
+                        this.player.template.audioItem[1].classList.remove('dplayer-setting-audio-current');
+                        this.player.template.audioValue.textContent = this.player.tran('Primary audio');
+                        this.player.plugins.mpegts.switchPrimaryAudio();
+                    } else if (event.target.dataset.audio === 'secondary') {
+                        // switch secondary audio
+                        this.player.template.audioItem[0].classList.remove('dplayer-setting-audio-current');
+                        this.player.template.audioItem[1].classList.add('dplayer-setting-audio-current');
+                        this.player.template.audioValue.textContent = this.player.tran('Secondary audio');
+                        this.player.plugins.mpegts.switchSecondaryAudio();
+                    }
+                    this.player.template.settingBox.classList.remove('dplayer-setting-box-audio');
+                }
+            });
+        }
 
         // loop
         this.loop = this.player.options.loop;
@@ -32,7 +85,6 @@ class Setting {
             } else {
                 this.loop = false;
             }
-            this.hide();
         });
 
         // show danmaku
@@ -51,7 +103,6 @@ class Setting {
                 this.player.danmaku.hide();
             }
             this.player.user.set('danmaku', this.showDanmaku ? 1 : 0);
-            this.hide();
         });
 
         // unlimit danmaku
@@ -67,33 +118,22 @@ class Setting {
                 this.player.danmaku.unlimit(false);
             }
             this.player.user.set('unlimited', this.unlimitDanmaku ? 1 : 0);
-            this.hide();
         });
-
-        // speed
-        this.player.template.speed.addEventListener('click', () => {
-            this.player.template.settingBox.classList.add('dplayer-setting-box-narrow');
-            this.player.template.settingBox.classList.add('dplayer-setting-box-speed');
-        });
-        for (let i = 0; i < this.player.template.speedItem.length; i++) {
-            this.player.template.speedItem[i].addEventListener('click', () => {
-                this.player.speed(this.player.template.speedItem[i].dataset.speed);
-                this.hide();
-            });
-        }
 
         // danmaku opacity
         if (this.player.danmaku) {
-            const dWidth = 130;
+            const barWidth = 190;
             this.player.on('danmaku_opacity', (percentage) => {
                 this.player.bar.set('danmaku', percentage, 'width');
                 this.player.user.set('opacity', percentage);
+                this.player.template.danmakuOpacityValue.textContent = percentage.toFixed(1);
             });
             this.player.danmaku.opacity(this.player.user.get('opacity'));
+            this.player.template.danmakuOpacityValue.textContent = this.player.user.get('opacity').toFixed(1);
 
             const danmakuMove = (event) => {
                 const e = event || window.event;
-                let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.danmakuOpacityBarWrap)) / dWidth;
+                let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.danmakuOpacityBarWrap)) / barWidth;
                 percentage = Math.max(percentage, 0);
                 percentage = Math.min(percentage, 1);
                 this.player.danmaku.opacity(percentage);
@@ -106,7 +146,7 @@ class Setting {
 
             this.player.template.danmakuOpacityBarWrapWrap.addEventListener('click', (event) => {
                 const e = event || window.event;
-                let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.danmakuOpacityBarWrap)) / dWidth;
+                let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.danmakuOpacityBarWrap)) / barWidth;
                 percentage = Math.max(percentage, 0);
                 percentage = Math.min(percentage, 1);
                 this.player.danmaku.opacity(percentage);
@@ -120,17 +160,19 @@ class Setting {
     }
 
     hide() {
+        this.player.template.container.classList.remove('dplayer-show-controller');
         this.player.template.settingBox.classList.remove('dplayer-setting-box-open');
         this.player.template.mask.classList.remove('dplayer-mask-show');
         setTimeout(() => {
-            this.player.template.settingBox.classList.remove('dplayer-setting-box-narrow');
             this.player.template.settingBox.classList.remove('dplayer-setting-box-speed');
+            this.player.template.settingBox.classList.remove('dplayer-setting-box-audio');
         }, 300);
 
         this.player.controller.disableAutoHide = false;
     }
 
     show() {
+        this.player.template.container.classList.add('dplayer-show-controller');
         this.player.template.settingBox.classList.add('dplayer-setting-box-open');
         this.player.template.mask.classList.add('dplayer-mask-show');
 

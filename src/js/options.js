@@ -6,6 +6,7 @@ export default (options) => {
     const defaultOption = {
         container: options.element || document.getElementsByClassName('dplayer')[0],
         live: false,
+        syncWhenPlayingLive: true,
         autoplay: false,
         theme: '#b7daff',
         loop: false,
@@ -21,10 +22,10 @@ export default (options) => {
         contextmenu: [],
         mutex: true,
         pictureInPicture: true,
-        pluginOptions: { hls: {}, flv: {}, dash: {}, webtorrent: {} },
+        pluginOptions: { hls: {}, mpegts: {}, flv: {}, dash: {}, webtorrent: {}, aribb24: {} },
     };
     for (const defaultKey in defaultOption) {
-        if (defaultOption.hasOwnProperty(defaultKey) && !options.hasOwnProperty(defaultKey)) {
+        if (Object.prototype.hasOwnProperty.call(defaultOption, defaultKey) && !Object.prototype.hasOwnProperty.call(options, defaultKey)) {
             options[defaultKey] = defaultOption[defaultKey];
         }
     }
@@ -32,7 +33,7 @@ export default (options) => {
         !options.video.type && (options.video.type = 'auto');
     }
     if (typeof options.danmaku === 'object' && options.danmaku) {
-        !options.danmaku.user && (options.danmaku.user = 'DIYgod');
+        !options.danmaku.user && (options.danmaku.user = 'DPlayer');
     }
     if (options.subtitle) {
         !options.subtitle.type && (options.subtitle.type = 'webvtt');
@@ -42,6 +43,18 @@ export default (options) => {
     }
 
     if (options.video.quality) {
+        // defaultQuality can be specified as a string
+        if (typeof options.video.defaultQuality === 'string') {
+            options.video.quality.forEach((quality, qualityIndex) => {
+                if (options.video.defaultQuality === quality.name) {
+                    options.video.defaultQuality = qualityIndex;
+                }
+            });
+            // failsafe
+            if (typeof options.video.defaultQuality === 'string') {
+                options.video.defaultQuality = 0;
+            }
+        }
         options.video.url = options.video.quality[options.video.defaultQuality].url;
     }
 
@@ -53,7 +66,7 @@ export default (options) => {
         {
             text: 'Video info',
             click: (player) => {
-                player.infoPanel.triggle();
+                player.infoPanel.toggle();
             },
         },
         {
